@@ -1,0 +1,40 @@
+Перенос рабочей системы на зеркало
+	1. Parted 
+	- Select /dev/sdb
+	- mklabel msdos (или gpt)
+	- Mkpart biosgrub ext2 1 2 (необходимо для записи grub)
+	- Select /dev/sdc 
+	- mklabel msdos (или gpt)
+	- Mkpart biosgrub ext2 1 2 (необходимо для записи grub)
+	- Quit
+	2. mdadm --zero-superblock --force /dev/sd{b,c} Занулим суперблоки (если диске уже были использованы в рейде)
+	- mdadm --create --verbose /dev/md0 -l 1 -n 2 /dev/sd{b,c} Создаем рейд
+	- cat /proc/mdstat - Смотрим на рейд
+	- mdadm -D /dev/md0 - Смотрим на рейд
+	- mdadm --detail --scan --verbose - Смотрим на рейд
+	- echo "DEVICE partitions" > /etc/mdadm/mdadm.conf Создаем файл mdadm.conf
+	- mdadm --detail --scan --verbose | awk '/ARRAY/ {print}' >> /etc/mdadm/mdadm.conf Записываем туда информацию о рейде
+	- parted -s /dev/md0 mklabel msdos (или gpt) Помечаем рейд как msdos (MBR)
+	- Select /dev/md0 Выбираем рейд
+	- Mkpart primary ext4 3 до (в МБ или указываем GB) Создаем раздел
+	- Mkfs.ext4 /dev/md0p1 Создаем файловую систему на разделе 
+	3. Mount /dev/md0p1 /mnt Монтируем раздел
+	- Cd /mnt - Переходим в mnt (/dev/md0p1)
+	- Mkdir -p dev/ mnt/ proc/ run/ sys/ - Создаем папки для будущих псевдофайловых систем
+	- Rsync -avx --delete --exclude /dev/ --exclude /mnt --exclude /proc/ --exclude /sys/ --exclude /run// /mnt - Копируем файлы системы, кроме тех которые указаны в исключениях
+	- Mount --rbind /dev/ /mnt/dev
+	- Mount --rbind /proc /mnt/proc
+	- Mount --rbind /sys /mnt/sys 
+	- Mount --rbind /run /mnt/run Здесь мы монтируем псевдоФС для того чтобы мы могли совершать операции для работы с устройствами и для возможности установки grub на диски
+	- Chroot /mnt - Переключаемся в каталог /mnt для выполнения настройки для загрузки будущей системы
+	4. Открываем файл /etc/default/grub
+	- В строке  GRUB_CMDLINE_LINUX добавляем rd.auto=1 (Делаем это для выключения SELinux, чтобы система потом загрузилась)
+	- Убеждаемся что rd.auto=1 записалась cat /boot/grub2/grub.cfg | grep rd.auto=1
+	- Blkid - Узнаем какой у раздела UUID и добавляем его в файл /etc/fstab
+	- mkinitrd -f -v /boot/initrd-$(uname -r).img $(uname -r) или dracut --force /boot/initramfs-$(uname -r).img $(uname -r) - Обновляем временную файловую систему
+	- grub2-mkconfig -o /boot/grub2/grub.cfg - Генерируем файл загрузчика
+	- grub2-install /dev/sda и grub2-install /dev/sdb Устанавливаем загрузчик на диски
+	- Exit из chroot
+	- Poweroff
+	- Вытаскиваем старый диск
+	- Загружаем систему

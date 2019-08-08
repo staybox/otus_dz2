@@ -1,0 +1,57 @@
+[root@otuslinux ~]# lsblk
+NAME       MAJ:MIN RM SIZE RO TYPE  MOUNTPOINT
+sdb          8:16   0  20G  0 disk
+├─sdb1       8:17   0   1M  0 part
+└─md10       9:10   0  20G  0 raid1
+  └─md10p1 259:0    0  20G  0 md    /
+sda          8:0    0  20G  0 disk
+├─sda1       8:1    0   1M  0 part
+└─md10       9:10   0  20G  0 raid1
+  └─md10p1 259:0    0  20G  0 md    /
+  
+[root@otuslinux ~]# mdadm -D /dev/md10
+/dev/md10:
+           Version : 1.2
+     Creation Time : Thu Aug  8 08:23:05 2019
+        Raid Level : raid1
+        Array Size : 20954112 (19.98 GiB 21.46 GB)
+     Used Dev Size : 20954112 (19.98 GiB 21.46 GB)
+      Raid Devices : 2
+     Total Devices : 2
+       Persistence : Superblock is persistent
+
+       Update Time : Thu Aug  8 14:39:38 2019
+             State : clean
+    Active Devices : 2
+   Working Devices : 2
+    Failed Devices : 0
+     Spare Devices : 0
+
+Consistency Policy : resync
+
+              Name : otuslinux:10  (local to host otuslinux)
+              UUID : bdd56b7b:899383b5:f56aac1c:137ae12d
+            Events : 675
+
+    Number   Major   Minor   RaidDevice State
+       0       8        0        0      active sync   /dev/sda
+       1       8       16        1      active sync   /dev/sdb
+	   
+
+[root@otuslinux ~]# cat /boot/grub2/grub.cfg | grep rd.auto=1
+        linux16 /boot/vmlinuz-5.2.4 root=UUID=3a4d5bd2-cf0f-4337-a390-68d314711d4f ro rd.auto=1 no_timer_check console=tty0 console=ttyS0,115200n8 net.ifnames=0 biosdevname=0 elevator=noop crashkernel=auto
+        linux16 /boot/vmlinuz-3.10.0-957.12.2.el7.x86_64 root=UUID=3a4d5bd2-cf0f-4337-a390-68d314711d4f ro rd.auto=1 no_timer_check console=tty0 console=ttyS0,115200n8 net.ifnames=0 biosdevname=0 elevator=noop crashkernel=auto
+
+
+[root@otuslinux ~]# cat /etc/fstab
+
+#
+# /etc/fstab
+# Created by anaconda on Sat Jun  1 17:13:31 2019
+#
+# Accessible filesystems, by reference, are maintained under '/dev/disk'
+# See man pages fstab(5), findfs(8), mount(8) and/or blkid(8) for more info
+#
+UUID=3a4d5bd2-cf0f-4337-a390-68d314711d4f /                       xfs     defaults        0 0
+/swapfile none swap defaults 0 0
+
